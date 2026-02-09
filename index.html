@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SECURE TERMINAL</title>
+  <style>
+    :root{
+      --bg:#050505;
+      --fg:#00ff66;
+      --fg2:#00c94f;
+      --warn:#ff3b3b;
+      --dim:rgba(0,255,102,.12);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh;
+      background: radial-gradient(1200px 800px at 50% 20%, #0b0b0b 0%, #030303 60%, #000 100%);
+      color:var(--fg); font-family:var(--mono);
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+    .frame{
+      width:min(860px, 100%);
+      border:1px solid var(--dim);
+      box-shadow: 0 0 0 1px rgba(0,255,102,.08), 0 0 40px rgba(0,255,102,.12);
+      background: linear-gradient(180deg, rgba(0,255,102,.06), rgba(0,0,0,.2));
+      position:relative; overflow:hidden;
+      border-radius:14px;
+    }
+    .scanlines{
+      pointer-events:none;
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.0) 0px,
+        rgba(0,0,0,0.0) 2px,
+        rgba(0,0,0,0.18) 3px
+      );
+      mix-blend-mode: multiply;
+      opacity:.7;
+    }
+    .glow{
+      pointer-events:none;
+      position:absolute; inset:-40%;
+      background: radial-gradient(circle at 30% 20%, rgba(0,255,102,.18), transparent 40%),
+                  radial-gradient(circle at 70% 80%, rgba(0,255,102,.10), transparent 45%);
+      filter: blur(30px);
+    }
+    header{
+      display:flex; gap:12px; align-items:center;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(0,255,102,.12);
+      background: rgba(0,0,0,.35);
+    }
+    .dot{width:10px;height:10px;border-radius:50%;}
+    .d1{background:#ff5f57}.d2{background:#febc2e}.d3{background:#28c840}
+    .title{letter-spacing:.18em; font-size:12px; color:var(--fg2)}
+    .content{padding:18px}
+    .line{margin:0 0 8px; color:var(--fg2)}
+    .terminal{
+      background: rgba(0,0,0,.45);
+      border:1px solid rgba(0,255,102,.14);
+      border-radius:12px;
+      padding:16px;
+      box-shadow: inset 0 0 0 1px rgba(0,255,102,.08);
+    }
+    .prompt{display:flex; gap:10px; align-items:center; margin-top:12px;}
+    .prompt span{color:var(--fg2)}
+    input{
+      flex:1;
+      background: rgba(0,0,0,.35);
+      border:1px solid rgba(0,255,102,.18);
+      color:var(--fg);
+      padding:12px 12px;
+      border-radius:10px;
+      font-family:var(--mono);
+      outline:none;
+    }
+    button{
+      background: rgba(0,255,102,.12);
+      border:1px solid rgba(0,255,102,.22);
+      color:var(--fg);
+      padding:12px 14px;
+      border-radius:10px;
+      font-family:var(--mono);
+      cursor:pointer;
+      transition: .15s ease;
+    }
+    button:hover{background: rgba(0,255,102,.18)}
+    .error{
+      color:var(--warn);
+      margin-top:10px;
+      display:none;
+      letter-spacing:.08em;
+    }
+    .lockedTag{
+      display:inline-block;
+      margin-top:10px;
+      padding:6px 10px;
+      border:1px dashed rgba(255,59,59,.5);
+      color:var(--warn);
+      border-radius:999px;
+      font-size:12px;
+      letter-spacing:.18em;
+    }
+    .files{
+      display:none;
+      margin-top:14px;
+      border-top:1px solid rgba(0,255,102,.12);
+      padding-top:14px;
+    }
+    .fileRow{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 12px;
+      border:1px solid rgba(0,255,102,.12);
+      border-radius:12px;
+      background: rgba(0,0,0,.28);
+      margin-bottom:10px;
+    }
+    .fileName{letter-spacing:.08em}
+    a{
+      color:var(--fg);
+      text-decoration:none;
+      border:1px solid rgba(0,255,102,.18);
+      padding:10px 12px;
+      border-radius:10px;
+      background: rgba(0,255,102,.10);
+    }
+    a:hover{background: rgba(0,255,102,.16)}
+    .small{font-size:12px;color:var(--fg2);opacity:.9}
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="glow"></div>
+    <div class="scanlines"></div>
+
+    <header>
+      <div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div>
+      <div class="title">SECURE ACCESS TERMINAL // CLASSIFIED</div>
+    </header>
+
+    <div class="content">
+      <p class="line">[SYS] Connection: ENCRYPTED</p>
+      <p class="line">[SYS] Clearance Required: TOP SECRET</p>
+      <span class="lockedTag">LOCKED</span>
+
+      <div class="terminal" id="loginBox">
+        <div class="small">
+          Enter access phrase to decrypt mission files.<br/>
+          Attempts are monitored. Unauthorized access will be logged.
+        </div>
+
+        <div class="prompt">
+          <span>PASS&gt;</span>
+          <input id="pw" type="password" placeholder="••••••••••" autocomplete="off" />
+          <button id="btn">UNLOCK</button>
+        </div>
+
+        <div class="error" id="err">ACCESS DENIED // WRONG PHRASE</div>
+
+        <div class="files" id="files">
+          <p class="line">[SYS] ACCESS GRANTED // FILES DECRYPTED</p>
+
+          <!-- Replace links below with your real PDF URLs (Google Drive direct links, etc.) -->
+          <div class="fileRow">
+            <div>
+              <div class="fileName">FILE-01: OPERATION BLACK TIDE // BRIEFING.pdf</div>
+              <div class="small">Contains route intel + primary objective</div>
+            </div>
+            <a href="YOUR_PDF_LINK_1" target="_blank">OPEN</a>
+          </div>
+
+          <div class="fileRow">
+            <div>
+              <div class="fileName">FILE-02: CAYO CCTV SNAPSHOTS // CAM PACK.pdf</div>
+              <div class="small">Runway transfer + dock extraction</div>
+            </div>
+            <a href="YOUR_PDF_LINK_2" target="_blank">OPEN</a>
+          </div>
+
+          <div class="fileRow">
+            <div>
+              <div class="fileName">FILE-03: FINAL COORDINATES // UNDERWATER CRATE.pdf</div>
+              <div class="small">Ocean grid + patrol boat pattern</div>
+            </div>
+            <a href="YOUR_PDF_LINK_3" target="_blank">OPEN</a>
+          </div>
+
+          <p class="small">Tip: Keep this page IC. OOC leaks burn crews.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Change this password:
+    const PASSWORD = "BlueGrave";
+
+    const pw = document.getElementById("pw");
+    const btn = document.getElementById("btn");
+    const err = document.getElementById("err");
+    const files = document.getElementById("files");
+
+    function unlock(){
+      const val = pw.value.trim();
+      if(val === PASSWORD){
+        err.style.display = "none";
+        files.style.display = "block";
+        btn.disabled = true;
+        pw.disabled = true;
+        btn.textContent = "UNLOCKED";
+      } else {
+        err.style.display = "block";
+        pw.value = "";
+        pw.focus();
+      }
+    }
+
+    btn.addEventListener("click", unlock);
+    pw.addEventListener("keydown", (e)=>{ if(e.key==="Enter") unlock(); });
+  </script>
+</body>
+</html>
